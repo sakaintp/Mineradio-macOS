@@ -1,7 +1,4 @@
-dist/*.dmg
-dist/mac-arm64/
-dist/mac/
-dist/win-unpacked/
+dist/
 node_modules/
 *.log
 .DS_Store

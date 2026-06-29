@@ -14967,6 +14967,12 @@ renderer.domElement.addEventListener('contextmenu', function(e){
 //   stage 模式: 鼠标 y > 60% 屏幕高
 //   shift + wheel: 强制滚卡片
 var wheelOverShelf = false;
+var shelfContentWheelAccum = 0;
+var shelfContentWheelLast = 0;
+var shelfCardWheelAccum = 0;
+var shelfCardWheelLast = 0;
+var SHELF_CONTENT_WHEEL_STEP = 130; // 累积滚轮距离阈值, 越大越慢
+var SHELF_CONTENT_WHEEL_INTERVAL = 110; // 两次滚行最小间隔(ms), 越大越慢, 专治触摸板惯性
 renderer.domElement.addEventListener('wheel', function(e){
   if (isPointerOverUi(e)) return;
   if (!shelfManager || shelfManager.getMode() === 'off') return;
@@ -14981,7 +14987,20 @@ renderer.domElement.addEventListener('wheel', function(e){
       var panelScreenHit = !rowHit && !panelHit && cl.screenContainsPanel ? cl.screenContainsPanel(e.clientX, e.clientY) : false;
       if (!rowHit && !panelHit && !panelScreenHit) return;
       e.preventDefault(); e.stopImmediatePropagation();
-      cl.scrollBy(e.deltaY > 0 ? 1 : -1);
+      var dy = e.deltaY;
+      if (e.deltaMode === 1) dy *= 18;
+      else if (e.deltaMode === 2) dy *= 120;
+      // 反向时重置累加器, 保证换方向立即响应
+      if ((dy > 0) !== (shelfContentWheelAccum > 0)) shelfContentWheelAccum = 0;
+      shelfContentWheelAccum += dy;
+      // 时间节流: 触摸板惯性会连发大量事件, 限制最小滚行间隔
+      var nowTs = (e.timeStamp || Date.now());
+      if (nowTs - shelfContentWheelLast < SHELF_CONTENT_WHEEL_INTERVAL) return;
+      if (Math.abs(shelfContentWheelAccum) < SHELF_CONTENT_WHEEL_STEP) return;
+      shelfContentWheelLast = nowTs;
+      var dir = shelfContentWheelAccum > 0 ? 1 : -1;
+      shelfContentWheelAccum = 0;
+      cl.scrollBy(dir);
       return;
     }
   }
@@ -15000,7 +15019,18 @@ renderer.domElement.addEventListener('wheel', function(e){
   if (inShelfArea) {
     e.preventDefault();
     e.stopImmediatePropagation();
-    shelfManager.scrollBy(e.deltaY > 0 ? 1 : -1);
+    var sdy = e.deltaY;
+    if (e.deltaMode === 1) sdy *= 18;
+    else if (e.deltaMode === 2) sdy *= 120;
+    if ((sdy > 0) !== (shelfCardWheelAccum > 0)) shelfCardWheelAccum = 0;
+    shelfCardWheelAccum += sdy;
+    var snow = (e.timeStamp || Date.now());
+    if (snow - shelfCardWheelLast < SHELF_CONTENT_WHEEL_INTERVAL) return;
+    if (Math.abs(shelfCardWheelAccum) < SHELF_CONTENT_WHEEL_STEP) return;
+    shelfCardWheelLast = snow;
+    var sdir = shelfCardWheelAccum > 0 ? 1 : -1;
+    shelfCardWheelAccum = 0;
+    shelfManager.scrollBy(sdir);
   }
 }, { passive: false, capture: true });
 
