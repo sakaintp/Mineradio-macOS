@@ -1,7 +1,8 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, process } = require('electron');
 
 contextBridge.exposeInMainWorld('desktopWindow', {
   isDesktop: true,
+  platform: process.platform,
   minimize: () => ipcRenderer.invoke('desktop-window-minimize'),
   toggleMaximize: () => ipcRenderer.invoke('desktop-window-toggle-maximize'),
   toggleFullscreen: () => ipcRenderer.invoke('desktop-window-toggle-fullscreen'),
@@ -49,4 +50,7 @@ contextBridge.exposeInMainWorld('desktopWindow', {
 window.addEventListener('DOMContentLoaded', () => {
   document.documentElement.classList.add('desktop-shell-root');
   document.body.classList.add('desktop-shell');
+  if (process.platform === 'darwin') {
+    document.body.classList.add('platform-darwin');
+  }
 });
