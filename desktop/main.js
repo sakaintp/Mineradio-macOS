@@ -248,12 +248,13 @@ function getWindowState(win) {
     hasDisplayOnRight: false,
     displayBounds: null,
   };
+  const isNativeFullScreen = win.isFullScreen();
   return {
     isMaximized: win.isMaximized(),
-    isNativeFullScreen: win.isFullScreen(),
+    isNativeFullScreen,
     isHtmlFullScreen: htmlFullscreenActive,
     isWindowFullScreen: windowFullscreenActive,
-    isFullScreen: win.isFullScreen() || htmlFullscreenActive || windowFullscreenActive,
+    isFullScreen: isNativeFullScreen || htmlFullscreenActive || windowFullscreenActive,
     isMinimized: win.isMinimized(),
     isVisible: win.isVisible(),
     isFocused: win.isFocused(),
@@ -1356,8 +1357,11 @@ async function createWindow() {
     minWidth: 960,
     minHeight: 540,
     show: false,
-    frame: false,
+    frame: process.platform === 'darwin',
     fullscreen: false,
+    fullscreenable: true,
+    resizable: true,
+    maximizable: true,
     transparent: true,
     backgroundColor: '#00000000',
     hasShadow: true,
@@ -1374,6 +1378,10 @@ async function createWindow() {
       backgroundThrottling: false,
     },
   });
+
+  if (process.platform === 'darwin' && typeof mainWindow.setFullScreenable === 'function') {
+    mainWindow.setFullScreenable(true);
+  }
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
